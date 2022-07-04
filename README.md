@@ -1,12 +1,22 @@
 # Windows 10 + Ubuntu 双系统安装、显卡驱动安装及排错指南
 
 ## 前言
-本教程为Windows10安装Ubuntu18.04 (x64)双系统教程，基于[此教程](https://www.cnblogs.com/masbay/p/11627727.html)进行修改。
+本教程为Windows10安装Ubuntu双系统教程，基于[此教程](https://www.cnblogs.com/masbay/p/11627727.html)进行修改。
 
 进一步添加了显卡三件套 (nVidia Driver + CUDA + cuDNN) 安装及配置
 
 ## Tips
 由于电脑品牌多样，碰到问题可能本教程并未涵盖，大家可以自行搜索后尝试解决，并且可以将自己问题和解决方法提交至issue，从而使教程更加丰富
+## 目录
+[一、查看电脑信息](#一查看电脑信息)
+
+[二、制作系统盘](#二制作系统盘)
+
+[三、(关键!) 在Windows下创建空白分区](#三关键-在windows下创建空白分区)
+
+[四、(关键!) 开始安装](#四关键-开始安装)
+
+[五、安装显卡三件套](#五安装显卡三件套)
 
 ## 一、查看电脑信息
 
@@ -73,7 +83,7 @@
 
 ### 1.BIOS设置
 
-插好系统盘，重启电脑，开机进bios，在Security页面，关掉Secure Boot（不同电脑secure boot可能在不同位置），然后到Boot页面，如果有Fast Boot这一项（部分联想电脑有），也把它关掉，没有忽略；然后保存更改，在Boot页面下方启动项选择 USB启动，回车，如果顺利进入安装页面，继续往下做；如果点击USB启动项无法进入，保存并退出，电脑会重启，根据自己电脑按相应的键进boot manager，找到USB启动项，回车即可进入。
+插好系统盘，重启电脑，开机进bios，在Security页面，关掉Secure Boot（不同电脑secure boot可能在不同位置），然后到Boot页面，如果有Fast Boot这一项），也把它关掉，没有忽略；然后保存更改，在Boot页面下方启动项选择 USB启动，回车，如果顺利进入安装页面，继续往下做；如果点击USB启动项无法进入，保存并退出，电脑会重启，根据自己电脑按相应的键进boot manager，找到USB启动项，回车即可进入。
 
 <img src='figures/BIOS.png' width="40%">
 
@@ -154,9 +164,7 @@ sudo vi ~/.bashrc
 
 ```sh
 export LD_LIBRARY_PATH=$LD_LIBRARY_PATH:/usr/local/cuda-xx.x/lib64
-
 export PATH=$PATH:/usr/local/cuda-xx.x/bin
-
 export CUDA_HOME=$CUDA_HOME:/usr/local/cuda-x.x
 ```
 
@@ -166,7 +174,7 @@ export CUDA_HOME=$CUDA_HOME:/usr/local/cuda-x.x
 
 进入存放目录，之后将压缩文件提取，再依次键入以下命令
 
-```
+```s
 sudo cp cuda/include/cudnn.h /usr/local/cuda/include/
 sudo cp cuda/lib64/libcudnn* /usr/local/cuda/lib64/
 sudo chmod a+r /usr/local/cuda/include/cudnn.h
@@ -177,4 +185,24 @@ sudo chmod a+r /usr/local/cuda/lib64/libcudnn*
 
 ```
 cat /usr/local/cuda/include/cudnn_version.h | grep CUDNN_MAJOR -A 2
+```
+
+#### 情况二 未预装显卡驱动
+
+禁用nouveau驱动：Ctrl + Alt + F1 进入命令行界面，输入以下命令打开黑名单
+```s
+sudo vi /etc/modprobe.d/blacklist-nouveau.conf
+```
+按i键进入INSERT模式，在黑名单中添加以下命令后，按ESC退出编辑模式，输入`:wq`进行保存（记得加冒号）
+```s
+blacklist nouveau
+options nouveau modeset=0
+```
+更新initramfs
+```s
+sudo update-initramfs -u
+```
+重启后会发现黑屏，只有左上角光标闪烁，这表示显示驱动没有正确安装，属于正常现象，Ctrl + Alt + F2 进入命令行界面，输入以下命令没有输出则表示禁用成功，随后可按照[情况一](#情况一-已有显卡驱动)安装三件套：
+```s
+lsmod | grep nouveau
 ```
